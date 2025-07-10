@@ -82,7 +82,10 @@ class Diagram:
             return (list(t) for t in set(satisfied))
 
         def condition_c(trio):
-            return True
+            r1,c1 = trio[0]
+            r2,c2 = trio[1]
+            
+            return all(self.column_weight[c] < self.column_weight[c2] for c in range(c1, c2))
     
         def condition_d(trio):
             #there is an empty space beneath r1 for all  c1 <= c <= c2
@@ -98,30 +101,35 @@ class Diagram:
                        return True
                 return False
             
-            return all(count_below(r1,c) for c in range(c1, c2 + 1))
+            return all(count_below(r1,c) for c in range(c1, self.col_num))
 
         
         def condition_e(trio):
-            # For r <= r1 and c > c2 where , if (r, c) in the diagram, all (r', c) for r' < r must be empty
+            # For r1 and c > c2 where , if (r1, c) in the diagram, there must be no cells below it
             r1, c1 = trio[0]
             r2, c2 = trio[1]
-            for c in range(c2 + 1, self.col_num):
-                for r in range(0, r1 + 1):
-                    if (r, c) in self.zero_index and self.column_weight[c] == self.column_weight[c2]:
-                        # Check all rows *below* r in column c
-                        for lower_r in range(0, r):
-                            if (lower_r, c) in self.zero_index:
-                                return False
+            
+            def count_below(col):
+                for row in range(r2 - 1, -1, -1): 
+                    if (row, col) not in self.zero_index:
+                        return True
+                return False
+            
+            for r,c in self.zero_index:
+                if r == r1 and c > c2:
+                    if count_below(c):
+                        return False
             return True
+            
     
         def condition_f(trio):
-            #for r1 < r <= r3 the cell (r,c1) not in the diagram
+            #for r1 < r the cell (r,c1) not in the diagram
             r1,c1 = trio[0]
-            r3,c3 = trio[2]
-            return all((r,c1) not in self.zero_index for r in range(r1 + 1, r3 + 1))
+            return all((r,c1) not in self.zero_index for r in range(r1 + 1,self.row_num))
         
         def condition_g(trio):
             # If there is a cell at (r, c1) for r > r1, then row_weight[r] > 1
+            return True
             r1, c1 = trio[0]
             for r in range(r1 + 1, self.row_num):
                 if (r, c1) in self.zero_index:
@@ -133,6 +141,7 @@ class Diagram:
         def condition_h(trio):
             #for c > c2 cwt(D)c < r2
             r2,c2 = trio[1]
+            return True
             return all(self.column_weight[c] <= r2 for c in range(c2 + 1, self.col_num))
             
             
@@ -152,7 +161,7 @@ class Diagram:
             #i_res = condition_i(trio)
             #j_res = condition_j(trio)
 
-            if c_res and d_res and e_res and f_res and g_res and h_res: # and i_res and j_res:
+            if c_res and e_res and f_res and d_res:# and e_res and f_res and g_res and h_res: # and i_res and j_res:
                 return f'Meets with {trio}'
             if c_res:
                 possible_failures.discard('fails C')
@@ -202,7 +211,7 @@ class Diagram:
                        return True
                 return False
             
-            return all(count_below(r1,c) for c in range(c1, c2 + 1))
+            return count_below(r1,c1)
         
         def condition_d(pair):
             #for c >= c2, cwt(D)c < r2
@@ -235,7 +244,7 @@ class Diagram:
             for i in range(n):
                 r1,c1 = self.zero_index[i]
                 for j in range(n):
-                    r2,c2 = self.zero_index[j]
+                    r2,c2 = self.zero_index[j]  
                     if len({(r1,c1),(r2,c2)}) != 2:
                         continue
                     if r1 >= r2 and c1 < c2:
@@ -259,7 +268,7 @@ class Diagram:
                         return True
                 return False
 
-            return all(count_below(c) for c in range(c1, c2 + 1))
+            return all(count_below(c) for c in range(c1, self.col_num))
 
 
         def condition_d(pair):
@@ -271,41 +280,51 @@ class Diagram:
 
             for (r, c) in self.zero_index:
                 if r > max_row and (c == c1 or c == c2):
-                    if c == c2:
-                        return 'Skip'
-                    else:
                         return True
-
             return False
                 
         def condition_e(pair):
-            #for c2 < c, cwt(D)c < r2
-            r2,c2 = pair[1]
-            return all(self.column_weight[c] < r2 for c in range(c2 + 1, self.col_num))
+            #for c2 < c, there is a column cwt(D)c < r2
+            r2, c2 = pair[1]
+
+            if c2 == self.col_num - 1:
+                return True
+            
+            col_list = [c for c in range(c2 + 1, self.col_num)]
+            
+            # for c in col_list:
+            #     if self.column_weight[c] == 1:
+            #         for (row,col) in self.zero_index:
+            #             if col == c and row == 0:
+            #                 col_list.remove(c)
+            return True
+            return any(self.column_weight[c] < r2 for c in col_list)
         
         def condition_f(pair):
-            #there are more empty spaces under r2 than the column weight of c for c > c2
+            #there is at least one empty cell in each column below r2 for c > c2
             r2,c2 = pair[1]
-            def count_empty(c):
-                count = 0
-                for r in range(r2):
-                    if (r,c) not in self.zero_index:
-                        count += 1
-                return count
-            return all(self.column_weight[c] < count_empty(c2) for c in range(c2 + 1, self.col_num))
+            def count_below(col):
+                for row in range(r2 - 1, -1, -1): 
+                    if (row, col) not in self.zero_index:
+                        return True
+                return False
+            return all(count_below(c) for c in range(c2 + 1, self.col_num))
         
+        def condition_g(pair):
+            
+            return True
+
+
         good_pairs = condition_a_and_b()
         
-        possible_failures = {'fails C', 'fails D', 'fails E', 'fails F'}
+        possible_failures = {'fails C', 'fails D', 'fails E', 'fails F', 'fails G'}
         for pair in good_pairs:
             c_res = condition_c(pair)
             d_res = condition_d(pair)
             e_res = condition_e(pair)
             f_res = condition_f(pair)
-            
-            if d_res == 'Skip':
-                return 'Skipped'
-            
+            g_res = condition_g(pair)
+
             #print(f'{pair}: {c_res}, {d_res}, {e_res}, {f_res}')
             if c_res:
                 possible_failures.discard('fails C')
@@ -315,8 +334,10 @@ class Diagram:
                 possible_failures.discard('fails E')
             if f_res:
                 possible_failures.discard('fails F')
+            if g_res:
+                possible_failures.discard('fails G')
                 
-            if c_res and d_res and e_res and f_res:
+            if c_res and d_res and e_res and f_res and g_res:
                 return f'Meets with {pair}'
         
         return f'Fails: {sorted(possible_failures)}'

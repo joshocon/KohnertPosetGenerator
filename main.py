@@ -10,7 +10,7 @@ import ast
 
 def main():
     sdg = SoutheastDiagramGenerator()
-    #sdg.generate(4,5) #generates all nxn southeast diagrams and writes it to diagrams.txt
+    #sdg.generate(5,5) #generates all nxn southeast diagrams and writes it to diagrams.txt
     
     def ask_bool(prompt):
         return input(prompt + " (y/n): ").strip().lower() == 'y'
@@ -99,7 +99,7 @@ def main():
             print('Error')
         
         elif engine.check_south_east(diagram.cells) == False:
-            print(f'\nNot Southeast: {diagram.cells}')
+           print(f'\nNot Southeast: {diagram.cells}')
         
         else:
             cache = {} 
@@ -152,6 +152,9 @@ def main():
         for line in f:
             start = line.find('[') + 1
             end = line.find(']')
+            
+            
+            
             if filter_criteria2 in line or filter_criteria1 in line:
                 if filter_criteria1 in line:
                     should_not_meet += 1
