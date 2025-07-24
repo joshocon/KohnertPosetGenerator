@@ -11,6 +11,8 @@ class LaTeXRenderer:
     def __init__(self):
         self.lines = ''
         self.positions = {}
+        self.diagram_scale = 1
+        self.node_scale = 1
         
     def set_node_positions(self, graph):
             nx_graph = nx.DiGraph()
@@ -67,7 +69,7 @@ class LaTeXRenderer:
     def generate_hasse_diagram(self, graph, root, result):
 
         figure_start_str = (
-            r'\begin{figure}[ht]\centering\begin{tikzpicture}[scale=0.5, every node/.style={scale=0.4}]'
+            fr'\begin{{figure}}[ht]\centering\begin{{tikzpicture}}[scale={self.diagram_scale}, every node/.style={{scale={self.node_scale}}}]'
             + '\n'
         )
         

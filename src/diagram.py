@@ -16,7 +16,6 @@ class Diagram:
         self.row_weight = None
         self.column_weight = None
         self.monomial = None
-        
         self.set_column_weight()
         
     # gives diagram a unique key
@@ -84,7 +83,7 @@ class Diagram:
         def condition_c(trio):
             r1,c1 = trio[0]
             r2,c2 = trio[1]
-            
+            return True
             return all(self.column_weight[c] < self.column_weight[c2] for c in range(c1, c2))
     
         def condition_d(trio):
@@ -144,8 +143,6 @@ class Diagram:
             return True
             return all(self.column_weight[c] <= r2 for c in range(c2 + 1, self.col_num))
             
-            
-        
         good_trios = condition_a_and_b()
         
         possible_failures = {'fails C', 'fails D', 'fails E', 'fails F', 'fails G', 'fails H'}#, 'fails I', 'fails J'}
@@ -183,54 +180,73 @@ class Diagram:
         return f'Fails: {sorted(possible_failures)}'
     
     def test_ranked_conjecture(self):
+        
         def condition_a_and_b():
-            #get pairs
+            #three cells such that  r2 <= r1 < r3 and c1 < c2 and c3 = c2 or c3 = c1
             satisfied = []
             n = len(self.zero_index)
             for i in range(n):
                 r1,c1 = self.zero_index[i]
                 for j in range(n):
                     r2,c2 = self.zero_index[j]
-                    if len({(r1,c1),(r2,c2)}) != 2:
-                        continue
-                    if r1 < r2 and c2 == c1:
-                        satisfied.append(tuple(sorted([(r1, c1), (r2, c2)])))
+                    for k in range(n):
+                        r3,c3 = self.zero_index[k]
+                        #make sure all cells are unique
+                        if len({(r1,c1), (r2,c2), (r3,c3)}) != 3:
+                            continue
+                        if ((r2 <= r1 < r3) or (r3 < r2 <= r1)) and ((c1 < c2) and (c3 == c2 or c3 == c1)):
+                            satisfied.append(tuple([(r1, c1), (r2, c2), (r3, c3)]))
             return satisfied
         
-        def condition_c(pair):
-            #there is an empty space beneath r1 for all  c1 <= c <= c2
-            r1,c1 = pair[0]
-            r2,c2 = pair[1]
+        def condition_c(triple):
+            r1, c1 = triple[0]
+            r2, c2 = triple[1]
+            r3, c3 = triple[2]
             
-            if r1 == 0:
+            rmin = min(r1,r2,r3)
+            
+            def count_below(col):
+                for row in range(rmin - 1, -1, -1): 
+                    if (row, col) not in self.zero_index:
+                        return True
+                return False
+                
+            def count_two_below(col):
+                count = 0
+                for row in range(rmin - 1, -1, -1): 
+                    if (row, col) not in self.zero_index:
+                        count += 1
+                        if count >= 2:
+                            return True
                 return False
             
-            def count_below(r,c):
-                for i in range(1, r1 + 1):
-                    if (r - i, c) not in self.zero_index:
-                       return True
+            if rmin == 0 :
                 return False
-            
-            return count_below(r1,c1)
-        
-        def condition_d(pair):
-            #for c >= c2, cwt(D)c < r2
-            r1,c1 = pair[0]
-            return all(self.column_weight[c] <= r1 for c in range(c1 + 1, self.col_num))
+            if c3 == c2:
+                return all(count_below(c) for c in range(c1, c2 + 1))
+            if c3 == c1:
+                return count_two_below(c1) and all(count_below(c) for c in range(c1 + 1, c2 + 1))
+                
 
-        good_pairs = condition_a_and_b()
+        
+        def condition_d(triple):
+            return True
+
+        good_triples = condition_a_and_b()
         
         possible_failures = {'fails C', 'fails D'}
-        for pair in good_pairs:
-            c_res = condition_c(pair)
-            d_res = condition_d(pair)
+        for triple in good_triples:
+            c_res = condition_c(triple)
+            d_res = condition_d(triple)
             
-            if c_res and d_res:
-                return f'Meets with {pair}'
             if c_res:
                 possible_failures.discard('fails C')
             if d_res:
                 possible_failures.discard('fails D')
+            
+            if c_res and d_res:
+                return f'Meets with {triple}'
+            
         
         return f'Fails: {sorted(possible_failures)}'
     
@@ -238,23 +254,26 @@ class Diagram:
         #if there exist cells (r1,c1) and (r2,c2) such that r1 >= r2 and c1 < c2 with at least two open spaces beneath each 
     
         def condition_a_and_b():
-            #get pairs
+            #three cells such that  r2 <= r1 < r3 and c1 < c2 and c3 = c2 or c3 = c1
             satisfied = []
             n = len(self.zero_index)
             for i in range(n):
                 r1,c1 = self.zero_index[i]
                 for j in range(n):
-                    r2,c2 = self.zero_index[j]  
-                    if len({(r1,c1),(r2,c2)}) != 2:
-                        continue
-                    if r1 >= r2 and c1 < c2:
-                        satisfied.append([(r1, c1), (r2, c2)])
+                    r2,c2 = self.zero_index[j]
+                    for k in range(n):
+                        r3,c3 = self.zero_index[k]
+                        #make sure all cells are unique
+                        if len({(r1,c1), (r2,c2), (r3,c3)}) != 3:
+                            continue
+                        if r2 <= r1 < r3 and c1 < c2 and (c3 == c2 or c3 == c1):
+                            satisfied.append(tuple([(r1, c1), (r2, c2), (r3, c3)]))
             return satisfied
         
-        def condition_c(pair):
+        def condition_c(triple):
             #there are at least two empty spaces beneath every row for c1 <= c <= c2
-            r1, c1 = pair[0]
-            r2, c2 = pair[1]
+            r1, c1 = triple[0]
+            r2, c2 = triple[1]
 
             if r1 == 0 or r2 == 0:
                 return False
@@ -271,38 +290,19 @@ class Diagram:
             return all(count_below(c) for c in range(c1, self.col_num))
 
 
-        def condition_d(pair):
-            #there is a cell above either x1 or x2 for r > r1
-            r1,c1 = pair[0]
-            r2,c2 = pair[1]
-            
-            max_row = max(r1,r2)
-
-            for (r, c) in self.zero_index:
-                if r > max_row and (c == c1 or c == c2):
-                        return True
-            return False
+        def condition_d(triple):
+           r2,c2 = triple[1]
+           return True
+           
                 
-        def condition_e(pair):
-            #for c2 < c, there is a column cwt(D)c < r2
-            r2, c2 = pair[1]
-
-            if c2 == self.col_num - 1:
-                return True
+        def condition_e(triple):
             
-            col_list = [c for c in range(c2 + 1, self.col_num)]
-            
-            # for c in col_list:
-            #     if self.column_weight[c] == 1:
-            #         for (row,col) in self.zero_index:
-            #             if col == c and row == 0:
-            #                 col_list.remove(c)
             return True
-            return any(self.column_weight[c] < r2 for c in col_list)
-        
-        def condition_f(pair):
+ 
+        def condition_f(triple):
             #there is at least one empty cell in each column below r2 for c > c2
-            r2,c2 = pair[1]
+            return True
+            r2,c2 = triple[1]
             def count_below(col):
                 for row in range(r2 - 1, -1, -1): 
                     if (row, col) not in self.zero_index:
@@ -310,22 +310,22 @@ class Diagram:
                 return False
             return all(count_below(c) for c in range(c2 + 1, self.col_num))
         
-        def condition_g(pair):
-            
+        def condition_g(triple):
             return True
 
-
-        good_pairs = condition_a_and_b()
+        
+        good_triple = condition_a_and_b()
         
         possible_failures = {'fails C', 'fails D', 'fails E', 'fails F', 'fails G'}
-        for pair in good_pairs:
-            c_res = condition_c(pair)
-            d_res = condition_d(pair)
-            e_res = condition_e(pair)
-            f_res = condition_f(pair)
-            g_res = condition_g(pair)
+        for triple in good_triple:
+            
+            c_res = condition_c(triple)
+            d_res = condition_d(triple)
+            e_res = condition_e(triple)
+            f_res = condition_f(triple)
+            g_res = condition_g(triple)
 
-            #print(f'{pair}: {c_res}, {d_res}, {e_res}, {f_res}')
+            #print(f'{triple}: {c_res}, {d_res}, {e_res}, {f_res}')
             if c_res:
                 possible_failures.discard('fails C')
             if d_res:
@@ -338,7 +338,7 @@ class Diagram:
                 possible_failures.discard('fails G')
                 
             if c_res and d_res and e_res and f_res and g_res:
-                return f'Meets with {pair}'
+                return f'Meets with {triple}'
         
         return f'Fails: {sorted(possible_failures)}'
             

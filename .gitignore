@@ -6,7 +6,9 @@ __pycache__/
 *.log
 *.pdf
 *.tex
+*.txt
 
 .DS_Store
 diagrams.txt
 output.txt
+formatted.txt

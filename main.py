@@ -10,7 +10,7 @@ import ast
 
 def main():
     sdg = SoutheastDiagramGenerator()
-    #sdg.generate(5,5) #generates all nxn southeast diagrams and writes it to diagrams.txt
+    #sdg.generate(4,4) #generates all nxn southeast diagrams and writes it to diagrams.txt
     
     def ask_bool(prompt):
         return input(prompt + " (y/n): ").strip().lower() == 'y'
@@ -102,10 +102,7 @@ def main():
            print(f'\nNot Southeast: {diagram.cells}')
         
         else:
-            cache = {} 
-            move_cells = engine.find_move_cells(diagram)
-            for move_pair in move_cells:
-                engine.kohnert_move(graph, diagram, move_pair, cache)
+            engine.kohnert_move(graph, diagram)
             
             kohnert_poset = KohnertPoset(graph)
 
@@ -152,8 +149,6 @@ def main():
         for line in f:
             start = line.find('[') + 1
             end = line.find(']')
-            
-            
             
             if filter_criteria2 in line or filter_criteria1 in line:
                 if filter_criteria1 in line:
